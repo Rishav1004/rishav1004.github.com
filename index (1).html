@@ -1,0 +1,83 @@
+<!doctype html>
+<html> 
+ <head> 
+  <title>Ingredient Checker</title> 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    input {
+      padding: 10px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+    }
+    #result {
+      margin-top: 20px;
+    }
+  </style> 
+ </head> 
+ <body> 
+  <h1>Ingredient Checker</h1> 
+  <input type="text" id="ingredient" placeholder="Enter ingredient name"> <button onclick="checkIngredient()">Check</button> 
+  <div id="result"></div> 
+  <script>
+    async function checkIngredient() {
+      const ingredient = document.getElementById('ingredient').value;
+      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ingredient}.json`);
+      const data = await response.json();
+      document.getElementById('result').innerText = JSON.stringify(data);
+    }
+  <script>
+  async function checkIngredient() {
+    const ingredient = document.getElementById('ingredient').value.trim();
+    if (!ingredient) {
+      document.getElementById('result').innerText = 'Please enter an ingredient.';
+      return;
+    }
+
+    try {
+      // Search for products by name
+      const searchResponse = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(ingredient)}&json=true`);
+      if (!searchResponse.ok) {
+        throw new Error('Search request failed');
+      }
+
+      const searchData = await searchResponse.json();
+      if (searchData.products && searchData.products.length > 0) {
+        // Take the first product from the search results
+        const product = searchData.products[0];
+        const barcode = product.code;
+
+        // Fetch detailed product info by barcode
+        const productResponse = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+        if (!productResponse.ok) {
+          throw new Error('Product request failed');
+        }
+
+        const productData = await productResponse.json();
+        if (productData.status === 1 && productData.product) {
+          const detailedProduct = productData.product;
+          let result = `<h2>${detailedProduct.product_name || 'No name available'}</h2>`;
+          result += `<p><strong>Ingredients:</strong> ${detailedProduct.ingredients_text || 'No ingredients available'}</p>`;
+          document.getElementById('result').innerHTML = result;
+        } else {
+          document.getElementById('result').innerText = 'Product details not found.';
+        }
+      } else {
+        document.getElementById('result').innerText = 'No products found for the given name.';
+      }
+    } catch (error) {
+      document.getElementById('result').innerText = 'Error fetching data: ' + error.message;
+    }
+  }
+</script>
+
+ 
+</body></html>
